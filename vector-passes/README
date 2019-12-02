@@ -1,0 +1,6 @@
+1) Build there version of llvm (3.1 w/ their quantum passes + others)
+  Okay that fails after successfully building on ubuntu16.04 wsl
+2) Hack cmake file to get the right directories to compile own pass outside of llvm tree
+3) If you want .ll either scaffold.h -qk <.scaffold> or scripts/gen-ll.sh <.scaffold>
+  For scaffold cmd, use <file>1.ll and after, but not <file>.ll
+4) ./build/Release+Asserts/bin/opt -S -load vector-passes/build/src/libTestPass.so -test cat_state.n04/cat_state.n04.ll
