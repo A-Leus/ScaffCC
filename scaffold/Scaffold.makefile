@@ -11,10 +11,14 @@ TOFF=0
 CTQG=0
 ROTATIONS=0
 
-# custom stuff (on Linux)
+# custom stuff
 CUSTOM=0
-CUSTOM_LIB=$(ROOT)/vector-passes/build/src/libTestPass.so
-CUSTOM_PASS_FLAGS=-test
+CUSTOM_PASS_FLAGS_ENCODED=""
+
+null :=
+space := ${null} ${null}
+CUSTOM_PASS_FLAGS :=$(subst __, $(space), $(CUSTOM_PASS_FLAGS_ENCODED) )
+#$(info CUSTOM PASS $(CUSTOM_PASS_FLAGS))
 
 BUILD=$(ROOT)/build/Release+Asserts
 #BUILD=$(ROOT)/build
@@ -182,7 +186,7 @@ $(FILE)12a.ll: $(FILE)11.ll
 $(FILE)12.ll: $(FILE)12a.ll
 	@if [ $(CUSTOM) -eq 1 ]; then \
 	echo "[Scaffold.makefile] Custom pass ..."; \
-		$(OPT) -S -load $(CUSTOM_LIB) $(CUSTOM_PASS_FLAGS) $(FILE)12a.ll -o $(FILE)12.ll > /dev/null; \
+		$(OPT) -S $(CUSTOM_PASS_FLAGS) $(FILE)12a.ll -o $(FILE)12.ll > /dev/null; \
 	else \
 		cp $(FILE)12a.ll $(FILE)12.ll; \
 	fi

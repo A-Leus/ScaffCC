@@ -9,7 +9,7 @@ if [ $(echo $PATH | grep ${RKQC_PATH} | wc -l) -eq 0 ]; then
 fi
 
 function show_help {
-    echo "Usage: $0 [-hv] [-rqfRTFckdso] [-l #] [-P #] <filename>.scaffold"
+    echo "Usage: $0 [-hv] [-rqfRTFckdsop] [-l #] [-P #] <filename>.scaffold"
     echo "    -r   Generate resource estimate (default)"
     echo "    -q   Generate QASM"
     echo "    -f   Generate flattened QASM"
@@ -25,7 +25,7 @@ function show_help {
     echo "    -d   Dry-run; show all commands to be run, but do not execute"
     echo "    -s   Generate QX Simulator input file"
     echo "    -o   Generate optimized QASM"
-    echo "    -p   Run custom pass"
+    echo "    -p   Run custom pass with given flags"
     echo "    -v   Show current Scaffold version information"
 }
 
@@ -50,7 +50,8 @@ precision=4
 targets=""
 optimize=0
 custom=0
-while getopts "h?vcdfbspFkqroTRl:P:" opt; do
+custom_pass_flags=""
+while getopts "h?vcdfbsFkqroTRl:P:p:" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -85,6 +86,7 @@ while getopts "h?vcdfbspFkqroTRl:P:" opt; do
     o) optimize=1
         ;;
     p) custom=1
+       custom_pass_flags=${OPTARG}
         ;;
     l) targets="${targets} SQCT_LEVELS=${OPTARG}"
         ;;
@@ -153,6 +155,6 @@ if [ ${clean} -eq 1 ]; then
 	make -f $ROOT/scaffold/Scaffold.makefile ${dryrun} ROOT=$ROOT DIRNAME=${dir} FILENAME=${filename} FILE=${file} CFILE=${cfile} clean
     exit
 fi
-make -f $ROOT/scaffold/Scaffold.makefile ${dryrun} ROOT=$ROOT DIRNAME=${dir} FILENAME=${filename} FILE=${file} CFILE=${cfile} TOFF=${toff} RKQC=${rkqc} ROTATIONS=${rot} PRECISION=${precision} OPTIMIZE=${optimize} CUSTOM=${custom} ${targets}
+make -f $ROOT/scaffold/Scaffold.makefile ${dryrun} ROOT=$ROOT DIRNAME=${dir} FILENAME=${filename} FILE=${file} CFILE=${cfile} TOFF=${toff} RKQC=${rkqc} ROTATIONS=${rot} PRECISION=${precision} OPTIMIZE=${optimize} CUSTOM=${custom} CUSTOM_PASS_FLAGS_ENCODED=${custom_pass_flags} ${targets}
 
 exit 0

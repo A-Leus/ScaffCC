@@ -26,7 +26,7 @@ parser.add_argument('--sim',
                     default=os.path.join(scaff_dir, 'qx-sim/qx_simulator_linux_x86_64/qx_simulator_1.0.beta_linux_x86_64'), 
                     help='Path to quantum simulator')
 parser.add_argument('--pass-lib', 
-                    default=os.path.join(scaff_dir, '/vector-passes/build/src/libTestPass.so'), 
+                    default=os.path.join(scaff_dir, 'vector-passes/build/src/libTestPass.so'), 
                     help='Path to pass static library')
 parser.add_argument('--pass-flag', 
                     default='-test', 
@@ -46,7 +46,8 @@ args = parser.parse_args()
 # -s to compile to flat QASM then to QX-SIM input file
 # -p also runs our custom pass
 # -v if want to examine files (12a is before our pass and 12 is the result of our pass)
-cc_flags = '-s -p'
+# HACK encode spaces as '__' so makefile can input
+cc_flags = '-s -k -p "-load__{}__{}"'.format(args.pass_lib, args.pass_flag)
 
 algos = {
   'cat' : { 'path': os.path.join(args.algos, 'Cat_State/cat_state.n04.scaffold') }
