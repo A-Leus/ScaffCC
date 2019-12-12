@@ -40,6 +40,10 @@ parser.add_argument('--compiler',
 parser.add_argument('--build', 
                     default=os.path.join(scaff_dir, 'algo-build'), 
                     help='Path to build files in')
+parser.add_argument('--do-sim',
+                    default=False,
+                    action='store_true',
+                    help='Whether to run sim or not')
 
 args = parser.parse_args()
 
@@ -47,7 +51,7 @@ args = parser.parse_args()
 # -p also runs our custom pass
 # -v if want to examine files (12a is before our pass and 12 is the result of our pass)
 # HACK encode spaces as '__' so makefile can input
-cc_flags = '-s -k -p "-load__{}__{}"'.format(args.pass_lib, args.pass_flag)
+cc_flags = '-s -p "-load__{}__{}"'.format(args.pass_lib, args.pass_flag)
 
 algos = {
   'cat' : { 'path': os.path.join(args.algos, 'Cat_State/cat_state.n04.scaffold') }
@@ -57,9 +61,22 @@ for k,v in algos.items():
   # go to build directory (and create if neccessary)
   build_dir = os.path.join(args.build, k)
   with cd(build_dir):
+    # compile
     cc = '{} {} {}'.format(args.compiler, cc_flags, v['path'])
     result = subprocess.check_output(cc, shell=True)
     print(result)
+
+    # identify .qc file to run
+    qc_file = subprocess.check_output('ls *.qc', shell=True)
+
+  # run script through simulator
+  if (args.do_sim):
+    qc_file = qc_file[:-1] # remove newline character
+    qc_file = os.path.join(build_dir, qc_file)
+    sim = '{} {}'.format(args.sim, qc_file)
+    sim_result = subprocess.check_output(sim, shell=True)
+    print(sim_result)
+
 
   
 
