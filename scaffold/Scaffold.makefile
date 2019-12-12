@@ -11,6 +11,11 @@ TOFF=0
 CTQG=0
 ROTATIONS=0
 
+# custom stuff (on Linux)
+CUSTOM=0
+CUSTOM_LIB=$(ROOT)/vector-passes/build/src/libTestPass.so
+CUSTOM_PASS_FLAGS=-test
+
 BUILD=$(ROOT)/build/Release+Asserts
 #BUILD=$(ROOT)/build
 
@@ -169,9 +174,18 @@ $(FILE)11.ll: $(FILE)9.ll
 	fi
 
 # Insert reverse functions if REVERSE is 1
-$(FILE)12.ll: $(FILE)11.ll
+$(FILE)12a.ll: $(FILE)11.ll
 	@echo "[Scaffold.makefile] Inserting Reverse Functions..."
-	@$(OPT) -S -load $(SCAFFOLD_LIB) -FunctionReverse $(FILE)11.ll -o $(FILE)12.ll > /dev/null
+	@$(OPT) -S -load $(SCAFFOLD_LIB) -FunctionReverse $(FILE)11.ll -o $(FILE)12a.ll > /dev/null
+
+# Perform custom passes
+$(FILE)12.ll: $(FILE)12a.ll
+	@if [ $(CUSTOM) -eq 1 ]; then \
+	echo "[Scaffold.makefile] Custom pass ..."; \
+		$(OPT) -S -load $(CUSTOM_LIB) $(CUSTOM_PASS_FLAGS) $(FILE)12a.ll -o $(FILE)12.ll > /dev/null; \
+	else \
+		cp $(FILE)12a.ll $(FILE)12.ll; \
+	fi
 
 # Generate resource counts from final LLVM output
 $(FILE).resources: $(FILE)12.ll
@@ -230,7 +244,7 @@ $(FILE).qc: $(FILE).qasmf
 
 # purge cleans temp files
 purge:
-	@rm -f $(FILE)_merged.scaffold $(FILE)_no.scaffold $(FILE).ll $(FILE)1.ll $(FILE)1a.ll $(FILE)1b.ll $(FILE)2.ll $(FILE)3.ll $(FILE)4.ll $(FILE)5.ll $(FILE)5a.ll $(FILE)6.ll $(FILE)6tmp.ll $(FILE)7.ll $(FILE)8.ll $(FILE)9.ll $(FILE)10.ll $(FILE)11.ll $(FILE)12.ll $(FILE)12.inlined.ll $(FILE)tmp.ll $(FILE)_qasm $(FILE)_qasm.scaffold fdecl.out $(CFILE).ctqg $(CFILE).c $(CFILE).signals $(FILE).tmp sim_$(CFILE) $(FILE).*.qasm
+	@rm -f $(FILE)_merged.scaffold $(FILE)_no.scaffold $(FILE).ll $(FILE)1.ll $(FILE)1a.ll $(FILE)1b.ll $(FILE)2.ll $(FILE)3.ll $(FILE)4.ll $(FILE)5.ll $(FILE)5a.ll $(FILE)6.ll $(FILE)6tmp.ll $(FILE)7.ll $(FILE)8.ll $(FILE)9.ll $(FILE)10.ll $(FILE)11.ll $(FILE)12a.ll $(FILE)12.ll $(FILE)12.inlined.ll $(FILE)tmp.ll $(FILE)_qasm $(FILE)_qasm.scaffold fdecl.out $(CFILE).ctqg $(CFILE).c $(CFILE).signals $(FILE).tmp sim_$(CFILE) $(FILE).*.qasm
 
 # clean removes all completed files
 clean: purge

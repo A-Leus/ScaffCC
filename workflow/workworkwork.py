@@ -34,3 +34,10 @@ parser.add_argument('--compiler',
                     help='Path to scaffold compiler')
 
 args = parser.parse_args()
+
+# -s to compile to flat QASM then to QX-SIM input file
+# -p also runs our custom pass
+# -v if want to examine files (12a is before our pass and 12 is the result of our pass)
+cc_flags = '-s -p'
+
+
