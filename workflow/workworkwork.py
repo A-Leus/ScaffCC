@@ -54,7 +54,14 @@ args = parser.parse_args()
 cc_flags = '-s -p "-load__{}__{}"'.format(args.pass_lib, args.pass_flag)
 
 algos = {
-  'cat' : { 'path': os.path.join(args.algos, 'Cat_State/cat_state.n04.scaffold') }
+  'cat'     : { 'path': os.path.join(args.algos, 'Cat_State/cat_state.n04.scaffold') },
+  #'bool'    : { 'path': os.path.join(args.algos, 'Boolean_Formula/boolean_formula.x2y2.scaffold') },
+  'vqe'     : { 'path': os.path.join(args.algos, 'VQE/UCCSD_ansatz_4.scaffold') },
+  'ground'  : { 'path': os.path.join(args.algos, 'Ground_State_Estimation/ground_state_estimation.h2.scaffold') },
+  'ising'   : { 'path': os.path.join(args.algos, 'Ising_Model/ising_model.n10.scaffold') },
+  'qft'     : { 'path': os.path.join(args.algos, 'QFT/qft.n05.scaffold') },
+  'grover'  : { 'path': os.path.join(args.algos, 'Square_Root/square_root.n4.scaffold') },
+
 }
 
 for k,v in algos.items():
