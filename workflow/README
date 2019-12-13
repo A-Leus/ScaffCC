@@ -1,0 +1,5 @@
+From any directory run 'python workworkwork.py'. Tested with python 2.7
+
+Make sure to change the scaff_dir at the top of the file to one locally.
+
+The script will run a bunch of benchmarks and insert the custom pass at the end of the normal scaffold flow.
