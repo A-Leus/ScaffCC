@@ -1,3 +1,7 @@
+Before running script you need to create workflow/env.py file to set environment variables manually.
+Create a variable 'scaff_dir' and set it to the root directory of ScaffCC on your system.
+Don't commit this file just keep it locally.
+
 From any directory run 'python workworkwork.py'. Tested with python 2.7
 
 Make sure to change the scaff_dir at the top of the file to one locally.

@@ -13,9 +13,9 @@ import os, subprocess, time, argparse, re
 
 from util import cd
 
-# TODO want absolute paths
-# set path ScaffCC on system
-scaff_dir = '/home/pbb59/cs6120/ScaffCC'
+# get scaffCC root directory from an uncommitted file.
+# user needs to set this themselves
+from env import scaff_dir
 
 # make sure this path exists on the system
 assert(os.path.exists(scaff_dir))
