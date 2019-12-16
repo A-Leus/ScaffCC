@@ -51,7 +51,7 @@ args = parser.parse_args()
 # -p also runs our custom pass
 # -k if want to examine files (12a is before our pass and 12 is the result of our pass)
 # HACK encode spaces as '__' so makefile can input
-cc_flags = '-s -p "-load__{}__{}"'.format(args.pass_lib, args.pass_flag)
+cc_flags = '-k -s -p "-load__{}__{}"'.format(args.pass_lib, args.pass_flag)
 
 algos = {
   'cat'     : { 'path': os.path.join(args.algos, 'Cat_State/cat_state.n04.scaffold') },
