@@ -49,13 +49,12 @@ args = parser.parse_args()
 
 # -s to compile to flat QASM then to QX-SIM input file
 # -p also runs our custom pass
-# -v if want to examine files (12a is before our pass and 12 is the result of our pass)
+# -k if want to examine files (12a is before our pass and 12 is the result of our pass)
 # HACK encode spaces as '__' so makefile can input
 cc_flags = '-s -p "-load__{}__{}"'.format(args.pass_lib, args.pass_flag)
 
 algos = {
   'cat'     : { 'path': os.path.join(args.algos, 'Cat_State/cat_state.n04.scaffold') },
-  #'bool'    : { 'path': os.path.join(args.algos, 'Boolean_Formula/boolean_formula.x2y2.scaffold') },
   'vqe'     : { 'path': os.path.join(args.algos, 'VQE/UCCSD_ansatz_4.scaffold') },
   'ground'  : { 'path': os.path.join(args.algos, 'Ground_State_Estimation/ground_state_estimation.h2.scaffold') },
   'ising'   : { 'path': os.path.join(args.algos, 'Ising_Model/ising_model.n10.scaffold') },
