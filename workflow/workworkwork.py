@@ -91,9 +91,10 @@ for k,v in algos.items():
   build_dir = os.path.join(args.build, k)
   with util.cd(build_dir):
     # compile
+    print('Compiling {}...'.format(k))
     cc = '{} {} {}'.format(args.compiler, cc_flags, v['path'])
     result = subprocess.check_output(cc, shell=True)
-    print(result)
+    #print(result)
 
     # identify .qc file to run
     qc_file = subprocess.check_output('ls *.qc', shell=True)
@@ -113,8 +114,11 @@ for k,v in algos.items():
     else:
       runs = 1
 
-    confidence = 0.95
+    #confidence = 0.95
     vals = []
+
+    print('Running {} sim {} times...'.format(k, runs))
+
     for run in range(runs):
       meas_val = util.qc_sim(sim_cmd)
       #print(meas_val)
@@ -129,6 +133,8 @@ for k,v in algos.items():
     (best_val, share) = util.get_majority(vals)
     v['majority'] = best_val
     v['share'] = share
+
+    print('Finshed. majority value={} market share={}\n'.format(best_val, share))
 
 # output results to file
 if (args.do_sim):
