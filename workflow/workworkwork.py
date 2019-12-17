@@ -11,7 +11,7 @@
 
 import os, subprocess, time, argparse, re
 
-from util import cd
+import util
 
 # get scaffCC root directory from an uncommitted file.
 # user needs to set this themselves
@@ -54,19 +54,42 @@ args = parser.parse_args()
 cc_flags = '-k -s -p "-load__{}__{}"'.format(args.pass_lib, args.pass_flag)
 
 algos = {
-  'cat'     : { 'path': os.path.join(args.algos, 'Cat_State/cat_state.n04.scaffold') },
-  'vqe'     : { 'path': os.path.join(args.algos, 'VQE/UCCSD_ansatz_4.scaffold') },
-  'ground'  : { 'path': os.path.join(args.algos, 'Ground_State_Estimation/ground_state_estimation.h2.scaffold') },
-  'ising'   : { 'path': os.path.join(args.algos, 'Ising_Model/ising_model.n10.scaffold') },
-  'qft'     : { 'path': os.path.join(args.algos, 'QFT/qft.n05.scaffold') },
-  'grover'  : { 'path': os.path.join(args.algos, 'Square_Root/square_root.n4.scaffold') },
+  'cat'     : { 
+    'path': os.path.join(args.algos, 'Cat_State/cat_state.n04.scaffold'),
+    'runs': 100,
+  },
+  # expect multiple values I think, it's eigenvalues? Take ones with a certain partial majority 
+  'vqe'     : { 
+    'path': os.path.join(args.algos, 'VQE/UCCSD_ansatz_4.scaffold'),
+    'runs': 100,
+  },
+  'ground'  : { 
+    'path': os.path.join(args.algos, 'Ground_State_Estimation/ground_state_estimation.h2.scaffold'), 
+    'runs': 10,
+  },
+  'ising'   : { 
+    'path': os.path.join(args.algos, 'Ising_Model/ising_model.n10.scaffold'),
+    'runs': 100,
+  },
+  # doesn't really make sense to measure because not meant to produce a single value
+  # 'qft'     : { 'path': os.path.join(args.algos, 'QFT/qft.n05.scaffold'), 'runs': 1 },
+  'grover'  : { 
+    'path': os.path.join(args.algos, 'Square_Root/square_root.n4.scaffold'),
+    'runs': 100,
+  },
 
 }
+
+# delete build directory before recompiling to assure clean
+try:
+  subprocess.check_output('rm -r {}'.format(args.build), shell=True)
+except:
+  pass
 
 for k,v in algos.items():
   # go to build directory (and create if neccessary)
   build_dir = os.path.join(args.build, k)
-  with cd(build_dir):
+  with util.cd(build_dir):
     # compile
     cc = '{} {} {}'.format(args.compiler, cc_flags, v['path'])
     result = subprocess.check_output(cc, shell=True)
@@ -77,11 +100,52 @@ for k,v in algos.items():
 
   # run script through simulator
   if (args.do_sim):
+    # prepare simulator command
     qc_file = qc_file[:-1] # remove newline character
     qc_file = os.path.join(build_dir, qc_file)
-    sim = '{} {}'.format(args.sim, qc_file)
-    sim_result = subprocess.check_output(sim, shell=True)
-    print(sim_result)
+    sim_cmd = '{} {}'.format(args.sim, qc_file)
+
+    # run simulation multiple times
+    # hard to say how many is reasonable in probabilistic computing
+    # just choose a number!
+    if ('runs' in v):
+      runs = v['runs']
+    else:
+      runs = 1
+
+    confidence = 0.95
+    vals = []
+    for run in range(runs):
+      meas_val = util.qc_sim(sim_cmd)
+      #print(meas_val)
+      val = util.bits_to_val(meas_val)
+      vals.append(val)
+      #(mean, stdev, lbnd, ubnd) = util.mean_confidence_interval(vals, confidence)
+      #(best_val, share) = util.get_majority(vals)
+      #conf_len = ubnd - lbnd
+      #print('run={}: val={} - maj={} w/ {} - m={} std={} clen={}'.format(run, val, best_val, share, mean, stdev, conf_len))
+
+    # store results
+    (best_val, share) = util.get_majority(vals)
+    v['majority'] = best_val
+    v['share'] = share
+
+# output results to file
+if (args.do_sim):
+  with open('results.csv', 'w+') as fd:
+    # top row algorithm names
+    fd.write('field,')
+    for k,v in algos.items():
+      fd.write(k + ',')
+    fd.write('\n')
+    # majority value market share
+    fd.write('share,')
+    for k,v in algos.items():
+      fd.write(str(v['share']) + ',')
+    fd.write('\n')
+    
+
+
 
 
   
