@@ -20,9 +20,10 @@ class cd:
         os.chdir(self.savedPath)
 
 
-def qc_sim(sim_cmd):
+def qc_sim(sim_cmd, print_sim=False):
     sim_result = subprocess.check_output(sim_cmd, shell=True)
-    print(sim_result)
+    if (print_sim):
+        print(sim_result)
 
     # parse sim result to determine output
     # require some x% confidence after y runs
