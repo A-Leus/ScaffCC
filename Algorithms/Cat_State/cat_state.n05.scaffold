@@ -1,0 +1,25 @@
+
+module catN ( qbit **bit, const int n ) {
+    H( bit[0][0] );
+    H( bit[1][0] );
+    for ( int i=1; i < n; i++ ) {
+        CNOT( bit[0][i-1], bit[0][i] );
+        CNOT( bit[1][i-1], bit[1][i] );
+    }
+}
+
+module unCatN ( qbit **bit, const int n ) {
+    for ( int i=n-1; i > 0; i-- ) {
+        CNOT( bit[0][i-1], bit[0][i] );
+        CNOT( bit[1][i-1], bit[1][i] );
+    }
+    H( bit[0][0] );
+    H( bit[1][0] );
+}
+
+int main () {
+    qbit* bits[4];
+    catN( bits, 4 );
+    return 0;
+}
+
