@@ -32,7 +32,7 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
 
   with util.cd(build_dir):
     # compile
-    print('Compiling {}...'.format(k))
+    print('Compiling {}...'.format(algo['name']))
     cc = '{} {} {}'.format(compiler_path, cc_flags, algo['path'])
     result = subprocess.check_output(cc, shell=True)
     #print(result)
@@ -58,7 +58,7 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
     #confidence = 0.95
     vals = []
 
-    print('Running {} sim {} times...'.format(k, runs))
+    print('Running {} sim {} times...'.format(algo['name'], runs))
 
     for run in range(runs):
       meas_val = util.qc_sim(sim_cmd)
