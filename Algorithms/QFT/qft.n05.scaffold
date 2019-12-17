@@ -90,9 +90,13 @@ int main () {
         PrepZ( reg[i],0 );
     }
     qft5( reg );
+
     for ( i = 0; i < 5; i++ ) {
-	H(reg[i]);
-//        out[i] = MeasZ( reg[i] );
+      H(reg[i]);
     }
+
+    // doesn't really make sense to measure this because not generally something you'd measure
+    // not designed to be measured i.e. prob not greater than 2/3
+
     return 0;
 }

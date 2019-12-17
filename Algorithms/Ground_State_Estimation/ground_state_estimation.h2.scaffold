@@ -249,4 +249,10 @@ int main ()
 	}
 	H(topregister[0]);
 
+	// top register corresponds to energy
+	// bottom register corresponds to orbital occupancies
+	// so want to measure the top one, the bigger example in this dir does that
+	for (int i = 0; i < 2; i++)
+		MeasZ(topregister[i]);
+
 }

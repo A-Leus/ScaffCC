@@ -16,6 +16,9 @@ module unCatN ( qbit *bit, const int n ) {
 int main () {
     qbit bits[4];
     catN( bits, 4 );
+    for (int i = 0; i < 4; i++) {
+        MeasZ(bits[i]);
+    }
     return 0;
 }
 

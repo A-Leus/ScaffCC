@@ -219,6 +219,9 @@ int main() {
   // measure a to recover the square root
   // for(i=0; i<n; i++) ma[i] = MeasZ(a[i]);
 
+  // measure a to recover the square root
+  for(i=0; i<n; i++) MeasZ(a[i]);
+
   return 0;
 }
 

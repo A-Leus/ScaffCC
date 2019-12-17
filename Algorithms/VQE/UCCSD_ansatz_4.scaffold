@@ -100,5 +100,10 @@ int main() {
     }
   }
 
+  // measure the qbits
+  // these gets eigenvalues so actually want to measure multiple values
+  for (int i = 0; i < N; i++)
+    MeasZ(reg[i]);
+
   return 0;
 }
