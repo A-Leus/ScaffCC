@@ -14,26 +14,27 @@ import os, subprocess, time, argparse, re
 import util
 import qalgos
 
-def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_flag, algos, do_sim=False):
+def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_flag, algo, do_sim=False):
   # -s to compile to flat QASM then to QX-SIM input file
   # -p also runs our custom pass
   # -k if want to examine files (12a is before our pass and 12 is the result of our pass)
   # HACK encode spaces as '__' so makefile can input
   cc_flags = '-k -s -p "-load__{}__{}"'.format(pass_lib_path, pass_flag)
 
-  # delete build directory before recompiling to assure clean
-  try:
-    subprocess.check_output('rm -r {}'.format(build_path), shell=True)
-  except:
-    pass
-
   for k,v in algos.items():
     # go to build directory (and create if neccessary)
-    build_dir = os.path.join(build_path, k)
+    build_dir = os.path.join(build_path, algo['name'])
+
+    # delete build directory before recompiling to assure clean
+    try:
+      subprocess.check_output('rm -r {}'.format(build_dir), shell=True)
+    except:
+      pass
+
     with util.cd(build_dir):
       # compile
       print('Compiling {}...'.format(k))
-      cc = '{} {} {}'.format(compiler_path, cc_flags, v['path'])
+      cc = '{} {} {}'.format(compiler_path, cc_flags, algo['path'])
       result = subprocess.check_output(cc, shell=True)
       #print(result)
 
@@ -50,8 +51,8 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
       # run simulation multiple times
       # hard to say how many is reasonable in probabilistic computing
       # just choose a number!
-      if ('runs' in v):
-        runs = v['runs']
+      if ('runs' in algo):
+        runs = algo['runs']
       else:
         runs = 1
 
@@ -72,25 +73,10 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
 
       # store results
       (best_val, share) = util.get_majority(vals)
-      v['majority'] = best_val
-      v['share'] = share
+      algo['majority'] = best_val
+      algo['share'] = share
 
       print('Finshed. majority value={} market share={}\n'.format(best_val, share))
-
-  # output results to file
-  if (do_sim):
-    with open('results.csv', 'w+') as fd:
-      # top row algorithm names
-      fd.write('field,')
-      for k,v in algos.items():
-        fd.write(k + ',')
-      fd.write('\n')
-      # majority value market share
-      fd.write('share,')
-      for k,v in algos.items():
-        fd.write(str(v['share']) + ',')
-      fd.write('\n')
-      
 
 if __name__ == "__main__":
   # get scaffCC root directory from an uncommitted file.
@@ -130,10 +116,20 @@ if __name__ == "__main__":
   # get info about algorithms to run
   algos = qalgos.get_algos(args.algos)
 
-  compile_and_sim(args.build, args.sim, args.compiler, args.pass_lib, args.pass_flag, algos, args.do_sim)
+  for k,v in algos.items():
+    # compile and sim a single program
+    compile_and_sim(args.build, args.sim, args.compiler, args.pass_lib, args.pass_flag, v, args.do_sim)
 
-
-
-  
-
-
+  # output results to file
+  if (args.do_sim):
+    with open('results.csv', 'w+') as fd:
+      # top row algorithm names
+      fd.write('field,')
+      for k,v in algos.items():
+        fd.write(k + ',')
+      fd.write('\n')
+      # majority value market share
+      fd.write('share,')
+      for k,v in algos.items():
+        fd.write(str(v['share']) + ',')
+      fd.write('\n')
