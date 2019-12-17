@@ -21,62 +21,61 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
   # HACK encode spaces as '__' so makefile can input
   cc_flags = '-k -s -p "-load__{}__{}"'.format(pass_lib_path, pass_flag)
 
-  for k,v in algos.items():
-    # go to build directory (and create if neccessary)
-    build_dir = os.path.join(build_path, algo['name'])
+  # go to build directory (and create if neccessary)
+  build_dir = os.path.join(build_path, algo['name'])
 
-    # delete build directory before recompiling to assure clean
-    try:
-      subprocess.check_output('rm -r {}'.format(build_dir), shell=True)
-    except:
-      pass
+  # delete build directory before recompiling to assure clean
+  try:
+    subprocess.check_output('rm -r {}'.format(build_dir), shell=True)
+  except:
+    pass
 
-    with util.cd(build_dir):
-      # compile
-      print('Compiling {}...'.format(k))
-      cc = '{} {} {}'.format(compiler_path, cc_flags, algo['path'])
-      result = subprocess.check_output(cc, shell=True)
-      #print(result)
+  with util.cd(build_dir):
+    # compile
+    print('Compiling {}...'.format(k))
+    cc = '{} {} {}'.format(compiler_path, cc_flags, algo['path'])
+    result = subprocess.check_output(cc, shell=True)
+    #print(result)
 
-      # identify .qc file to run
-      qc_file = subprocess.check_output('ls *.qc', shell=True)
+    # identify .qc file to run
+    qc_file = subprocess.check_output('ls *.qc', shell=True)
 
-    # run script through simulator
-    if (do_sim):
-      # prepare simulator command
-      qc_file = qc_file[:-1] # remove newline character
-      qc_file = os.path.join(build_dir, qc_file)
-      sim_cmd = '{} {}'.format(sim_path, qc_file)
+  # run script through simulator
+  if (do_sim):
+    # prepare simulator command
+    qc_file = qc_file[:-1] # remove newline character
+    qc_file = os.path.join(build_dir, qc_file)
+    sim_cmd = '{} {}'.format(sim_path, qc_file)
 
-      # run simulation multiple times
-      # hard to say how many is reasonable in probabilistic computing
-      # just choose a number!
-      if ('runs' in algo):
-        runs = algo['runs']
-      else:
-        runs = 1
+    # run simulation multiple times
+    # hard to say how many is reasonable in probabilistic computing
+    # just choose a number!
+    if ('runs' in algo):
+      runs = algo['runs']
+    else:
+      runs = 1
 
-      #confidence = 0.95
-      vals = []
+    #confidence = 0.95
+    vals = []
 
-      print('Running {} sim {} times...'.format(k, runs))
+    print('Running {} sim {} times...'.format(k, runs))
 
-      for run in range(runs):
-        meas_val = util.qc_sim(sim_cmd)
-        #print(meas_val)
-        val = util.bits_to_val(meas_val)
-        vals.append(val)
-        #(mean, stdev, lbnd, ubnd) = util.mean_confidence_interval(vals, confidence)
-        #(best_val, share) = util.get_majority(vals)
-        #conf_len = ubnd - lbnd
-        #print('run={}: val={} - maj={} w/ {} - m={} std={} clen={}'.format(run, val, best_val, share, mean, stdev, conf_len))
+    for run in range(runs):
+      meas_val = util.qc_sim(sim_cmd)
+      #print(meas_val)
+      val = util.bits_to_val(meas_val)
+      vals.append(val)
+      #(mean, stdev, lbnd, ubnd) = util.mean_confidence_interval(vals, confidence)
+      #(best_val, share) = util.get_majority(vals)
+      #conf_len = ubnd - lbnd
+      #print('run={}: val={} - maj={} w/ {} - m={} std={} clen={}'.format(run, val, best_val, share, mean, stdev, conf_len))
 
-      # store results
-      (best_val, share) = util.get_majority(vals)
-      algo['majority'] = best_val
-      algo['share'] = share
+    # store results
+    (best_val, share) = util.get_majority(vals)
+    algo['majority'] = best_val
+    algo['share'] = share
 
-      print('Finshed. majority value={} market share={}\n'.format(best_val, share))
+    print('Finshed. majority value={} market share={}\n'.format(best_val, share))
 
 if __name__ == "__main__":
   # get scaffCC root directory from an uncommitted file.
