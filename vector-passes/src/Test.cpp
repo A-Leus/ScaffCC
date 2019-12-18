@@ -43,12 +43,7 @@ namespace {
 
 
       bool modified = false;
-      int skip = 0;
       for (AllocaInst* alloca_op : bitAllocs) {
-        if (skip > 0) {
-          skip--;
-          continue;
-        }
         IRBuilder<> builder(alloca_op);
         builder.SetInsertPoint(alloca_op->getParent(), ++builder.GetInsertPoint());
         std::vector<Value*> newOps;
@@ -60,11 +55,6 @@ namespace {
           Value* newCpy = builder.CreateMemCpy(newAlloca, alloca_op, alloca_size, 2);
           newOps.push_back(newAlloca);
         }
-        skip = REP_COUNT * 3;
-        
-        // errs() << op->getNumUses() << "--\n";
-        if (newOps.size() == 0)
-          continue;
         
         auto next_op = (Instruction*)alloca_op;
         // I can't figure out the recursion here tonight...just too tired.
