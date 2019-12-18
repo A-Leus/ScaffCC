@@ -52,31 +52,32 @@ namespace {
         Value* newOp;
         Type* alloca_type = alloca_op->getAllocatedType();
         Value* alloca_size = alloca_op->getArraySize();
-        for (int i = 0; i < REP_COUNT - 1; i++) {
-          Value* newAlloca = builder.CreateAlloca(alloca_type, alloca_size);
-          Value* newCpy = builder.CreateMemCpy(newAlloca, alloca_op, alloca_size, 2);
+        for (int i = 1; i < REP_COUNT; i++) {
+          Twine new_name = alloca_op->getName() + "_" + Twine(i);
+          Value* newAlloca = builder.CreateAlloca(alloca_type, alloca_size, new_name);
+          //Value* newCpy = builder.CreateMemCpy(newAlloca, alloca_op, alloca_size, 2);
           newOps.push_back(newAlloca);
         }
         
-        auto next_op = (Instruction*)alloca_op;
-        // I can't figure out the recursion here tonight...just too tired.
-        for (int i = 0; i < 1; i++) {
-        // while (next_op->getNumUses() > 0) {
-          std::vector<Value*> nextOps;
-          for (auto iter = next_op->use_begin(); !iter.atEnd(); iter++) {
-            User* cur_user = *iter;
-            next_op = (Instruction*) cur_user;
-            for (int i = 0; i < REP_COUNT - 1; i++) {
-              auto new_instr = next_op->clone();
-              new_instr = builder.Insert(new_instr);
-              nextOps.push_back(new_instr);
-              for (int j = 0; j < cur_user->getNumOperands(); j++)
-                if (cur_user->getOperand(j) == alloca_op)
-                  new_instr->setOperand(j, newOps[i]);
-            }
-          }
-          newOps = nextOps;
-        }
+        // auto next_op = (Instruction*)alloca_op;
+        // // I can't figure out the recursion here tonight...just too tired.
+        // for (int i = 0; i < 1; i++) {
+        // // while (next_op->getNumUses() > 0) {
+        //   std::vector<Value*> nextOps;
+        //   for (auto iter = next_op->use_begin(); !iter.atEnd(); iter++) {
+        //     User* cur_user = *iter;
+        //     next_op = (Instruction*) cur_user;
+        //     for (int i = 0; i < REP_COUNT - 1; i++) {
+        //       auto new_instr = next_op->clone();
+        //       new_instr = builder.Insert(new_instr);
+        //       nextOps.push_back(new_instr);
+        //       for (int j = 0; j < cur_user->getNumOperands(); j++)
+        //         if (cur_user->getOperand(j) == alloca_op)
+        //           new_instr->setOperand(j, newOps[i]);
+        //     }
+        //   }
+        //   newOps = nextOps;
+        // }
         // for (auto& U : op->uses()) {
         //   User* user = U.getUser();  // A User is anything with operands.
         //   user->setOperand(U.getOperandNo(), newOp);
