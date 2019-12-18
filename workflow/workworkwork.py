@@ -38,7 +38,12 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
     #print(result)
 
     # identify .qc file to run
-    qc_file = subprocess.check_output('ls *.qc', shell=True)
+    try:
+      qc_file = subprocess.check_output('ls *.qc', shell=True)
+    except:
+      print(result)
+      print("Failed compiling {}".format(algo['name']))
+      assert(False)
 
   # run script through simulator
   if (do_sim):
