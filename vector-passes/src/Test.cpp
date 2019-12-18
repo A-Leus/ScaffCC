@@ -4,12 +4,14 @@
 #include "llvm/InstrTypes.h"
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/CommandLine.h"
 
 #include <stdio.h>
 
 using namespace llvm;
 
-const int REP_COUNT = 3;
+// command line argument specified as --qvlen 
+static cl::opt<int> REP_COUNT("qvlen", cl::desc("Specify the vector length for quantum pass"), cl::value_desc("vlen"), cl::init(3));
 
 namespace {
   struct TestPass : public FunctionPass {
@@ -18,8 +20,8 @@ namespace {
 
     virtual bool runOnFunction(Function &F) {
       LLVMContext &Ctx = F.getContext();
-
-      errs() << "run on func\n";
+      errs() << "vlen " << REP_COUNT << '\n';
+      errs() << "run on func " << F.getName() << "\n";
       
       // first identify allocations
       std::vector<AllocaInst*> bitAllocs;
