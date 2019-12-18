@@ -34,7 +34,7 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
     # compile
     print('Compiling {}...'.format(algo['name']))
     cc = '{} {} {}'.format(compiler_path, cc_flags, algo['path'])
-    result = subprocess.check_output(cc, shell=True)
+    result = subprocess.check_output(cc, stderr=subprocess.STDOUT, shell=True)
     #print(result)
 
     # identify .qc file to run
@@ -77,6 +77,9 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
 
     print('Finshed. majority value={} market share={}\n'.format(best_val, share))
 
+  # return compile result for parsing
+  return result
+
 if __name__ == "__main__":
   # get scaffCC root directory from an uncommitted file.
   # user needs to set this themselves
@@ -117,7 +120,8 @@ if __name__ == "__main__":
 
   for k,v in algos.items():
     # compile and sim a single program
-    compile_and_sim(args.build, args.sim, args.compiler, args.pass_lib, args.pass_flag, v, args.do_sim)
+    compile_result = compile_and_sim(args.build, args.sim, args.compiler, args.pass_lib, args.pass_flag, v, args.do_sim)
+    print(compile_result)
 
   # output results to file
   if (args.do_sim):
