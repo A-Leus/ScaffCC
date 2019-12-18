@@ -185,8 +185,9 @@ $(FILE)12a.ll: $(FILE)11.ll
 # Perform custom passes
 $(FILE)12.ll: $(FILE)12a.ll
 	@if [ $(CUSTOM) -eq 1 ]; then \
-	echo "[Scaffold.makefile] Custom pass ..."; \
-		$(OPT) -S $(CUSTOM_PASS_FLAGS) $(FILE)12a.ll -o $(FILE)12.ll > /dev/null; \
+		echo "[Scaffold.makefile] Flatten, then custom pass ..."; \
+		$(OPT) -S -load $(SCAFFOLD_LIB) -FlattenModule -all 1 $(FILE)12a.ll -o $(FILE)12a.inlined.ll 2> /dev/null; \
+		$(OPT) -S $(CUSTOM_PASS_FLAGS) $(FILE)12a.inlined.ll -o $(FILE)12.ll > /dev/null; \
 	else \
 		cp $(FILE)12a.ll $(FILE)12.ll; \
 	fi
