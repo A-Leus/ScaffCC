@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <queue>
 #include <stdio.h>
+#include <memory>
 
 using namespace llvm;
 
@@ -33,9 +34,9 @@ namespace {
     TestPass() : FunctionPass(ID) {}
 
     virtual bool runOnFunction(Function &F) {
-      LLVMContext &Ctx = F.getContext();
-      errs() << "vlen " << REP_COUNT << '\n';
-      errs() << "run on func " << F.getName() << "\n";
+      //LLVMContext &Ctx = F.getContext();
+      //errs() << "vlen " << REP_COUNT << '\n';
+      //errs() << "run on func " << F.getName() << "\n";
       
       // first identify allocations
       std::vector<AllocaInst*> bitAllocs;
@@ -52,10 +53,11 @@ namespace {
       }
 
       // initially seed the work queue with the allocs
-      std::queue<llvm::Instruction*> workQueue;
+      auto workQueue_ptr = new std::queue<llvm::Instruction*>();
       // Hash table storing extra meta data for the processed instructions
-      std::unordered_map<llvm::Instruction*, InstMetadata_t> metaTable;
-
+      auto metaTable_ptr = new std::unordered_map<llvm::Instruction*, std::shared_ptr<InstMetadata_t>>();
+      auto& workQueue = *workQueue_ptr;
+      auto& metaTable = *metaTable_ptr;
 
       // then insert a new allocation/copy of the allocation
       // data structure is [orig_alloc][copy#]
@@ -89,10 +91,7 @@ namespace {
       while (!workQueue.empty()) {
         // get instruction to process
         auto &I = workQueue.front();
-        workQueue.pop();
         
-        errs() << *I << "\n";
-
         // do action on the instruction (copy and propagate copied deps)
         IRBuilder<> builder(I);
         builder.SetInsertPoint(I->getParent(), ++builder.GetInsertPoint());
@@ -100,31 +99,34 @@ namespace {
         for (int i = 1; i < REP_COUNT; i++) {
           auto new_instr = I->clone();
           new_instr = builder.Insert(new_instr);
-          
-          errs() << *new_instr << "\n";
 
           std::string op_code = I->getOpcodeName();
           if (op_code == "alloca") {
             Twine new_name = I->getName() + "_" + Twine(i);
-            errs() << "set name " << new_name << "\n";
             new_instr->setName(new_name);
           }
+          // else if (!I->getType()->isVoidTy()) {
+          //   //auto valueName = I->getValueName();
+          //   Twine new_name = I->getName() + "_" + Twine(i);
+          //   new_instr->setName(new_name);
+          // }
 
+          // Twine new_name = I->getName() + "__" + Twine(i);
+          // new_instr->setName(new_name);
+          assert(new_instr);
           // for each operand get the copy stored in the metadata for the orignal instruction
           for (int j = 0; j < new_instr->getNumOperands(); j++) {
             // get metadata for this dependency of the original instruction
             llvm::Instruction* def_inst = nullptr;
             auto orig_operand = dyn_cast<llvm::Instruction>(I->getOperand(j));
             if (orig_operand != nullptr) { // instruction dep
-              errs() << "operand\n";
               if (metaTable.count(orig_operand)) {
-                def_inst = metaTable[orig_operand].clones[i - 1];
+                def_inst = metaTable[orig_operand]->clones[i - 1];
               }
               
               new_instr->setOperand(j, def_inst);
             }
             else { // normal value
-              errs() << "normal val\n";
               new_instr->setOperand(j, I->getOperand(j));
             }
           }
@@ -132,14 +134,14 @@ namespace {
           newInsts.push_back(new_instr);
         }
 
-        metaTable[I] = InstMetadata_t(newInsts);
+        metaTable[I] = std::make_shared<InstMetadata_t>(newInsts);
 
 
         // check uses of this original instruction and try to put future instructions on the work queue if rdy
         for (auto iter = I->use_begin(); !iter.atEnd(); iter++) {
           llvm::User* cur_user = *iter;
           llvm::Instruction* nextI = (llvm::Instruction*) cur_user;
-
+          
           // get all dependencies, if all in the metaTable, then deps met and can be added to the queue
           bool depsMet = true;
           for (int i = 0; i < nextI->getNumOperands(); i++) {
@@ -152,7 +154,12 @@ namespace {
             workQueue.push(nextI);
           }
         }
+
+        workQueue.pop();
       }
+
+      delete workQueue_ptr;
+      delete metaTable_ptr;
 
       return (REP_COUNT > 1);
     }
