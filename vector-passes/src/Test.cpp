@@ -28,10 +28,8 @@ namespace {
       for (auto& B : F) {
         for (auto& I : B) {
           auto* op = &I;
-          errs() << ";" << op->getOpcodeName() << "--" << op->getType()->isPointerTy() << "\n";
-
           std::string op_code = op->getOpcodeName();
-          if (op_code == "alloca") { // Only one operand
+          if (op_code == "alloca") {
             AllocaInst* alloca_op = (AllocaInst*) op;
             bitAllocs.push_back(alloca_op);
           }
@@ -52,32 +50,37 @@ namespace {
         Value* newOp;
         Type* alloca_type = alloca_op->getAllocatedType();
         Value* alloca_size = alloca_op->getArraySize();
-        for (int i = 1; i < REP_COUNT; i++) {
-          Twine new_name = alloca_op->getName() + "_" + Twine(i);
-          Value* newAlloca = builder.CreateAlloca(alloca_type, alloca_size, new_name);
-          //Value* newCpy = builder.CreateMemCpy(newAlloca, alloca_op, alloca_size, 2);
+        for (int i = 0; i < REP_COUNT - 1; i++) {
+          Value* newAlloca = builder.CreateAlloca(alloca_type, alloca_size);
+          // Value* newCpy = builder.CreateMemCpy(newAlloca, alloca_op, alloca_size, 2);
           newOps.push_back(newAlloca);
         }
         
-        // auto next_op = (Instruction*)alloca_op;
-        // // I can't figure out the recursion here tonight...just too tired.
-        // for (int i = 0; i < 1; i++) {
-        // // while (next_op->getNumUses() > 0) {
-        //   std::vector<Value*> nextOps;
-        //   for (auto iter = next_op->use_begin(); !iter.atEnd(); iter++) {
-        //     User* cur_user = *iter;
-        //     next_op = (Instruction*) cur_user;
-        //     for (int i = 0; i < REP_COUNT - 1; i++) {
-        //       auto new_instr = next_op->clone();
-        //       new_instr = builder.Insert(new_instr);
-        //       nextOps.push_back(new_instr);
-        //       for (int j = 0; j < cur_user->getNumOperands(); j++)
-        //         if (cur_user->getOperand(j) == alloca_op)
-        //           new_instr->setOperand(j, newOps[i]);
-        //     }
-        //   }
-        //   newOps = nextOps;
-        // }
+        std::vector<Instruction*> op_list;
+        // Inefficient queue setup, but whatever
+        op_list.insert(op_list.begin(), (Instruction*)alloca_op);
+        // I can't figure out the recursion here tonight...just too tired.
+        for (int tmp = 0; tmp < 2; tmp++) {
+        // while (next_op->getNumUses() > 0) {
+          std::vector<Value*> nextOps;
+          Instruction* cur_op = op_list[op_list.size() - 1];
+          op_list.pop_back();
+          for (auto iter = cur_op->use_begin(); !iter.atEnd(); iter++) {
+            User* cur_user = *iter;
+            auto next_op = (Instruction*) cur_user;
+            op_list.insert(op_list.begin(), next_op);
+            for (int i = 0; i < REP_COUNT - 1; i++) {
+              auto new_instr = next_op->clone();
+              builder.SetInsertPoint(next_op->getParent(), ++builder.GetInsertPoint());
+              new_instr = builder.Insert(new_instr);
+              nextOps.push_back(new_instr);
+              for (int j = 0; j < cur_user->getNumOperands(); j++)
+                if (cur_user->getOperand(j) == cur_op)
+                  new_instr->setOperand(j, newOps[i]);
+            }
+          }
+          newOps = nextOps;
+        }
         // for (auto& U : op->uses()) {
         //   User* user = U.getUser();  // A User is anything with operands.
         //   user->setOperand(U.getOperandNo(), newOp);
