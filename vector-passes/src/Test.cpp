@@ -51,7 +51,8 @@ namespace {
         Type* alloca_type = alloca_op->getAllocatedType();
         Value* alloca_size = alloca_op->getArraySize();
         for (int i = 0; i < REP_COUNT - 1; i++) {
-          Value* newAlloca = builder.CreateAlloca(alloca_type, alloca_size);
+          Twine new_name = alloca_op->getName() + "_" + Twine(i);
+          Value* newAlloca = builder.CreateAlloca(alloca_type, alloca_size, new_name);
           // Value* newCpy = builder.CreateMemCpy(newAlloca, alloca_op, alloca_size, 2);
           newOps.push_back(newAlloca);
         }
