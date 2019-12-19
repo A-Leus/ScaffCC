@@ -130,7 +130,7 @@ if __name__ == "__main__":
     pass_flag = '{}__{}'.format(args.pass_flag, '--qvlen=' + str(vlen))
     # compile and sim a single program
     compile_result = compile_and_sim(args.build, args.sim, args.compiler, args.pass_lib, pass_flag, v, args.do_sim)
-    print(compile_result)
+    #print(compile_result)
 
   # output results to file
   if (args.do_sim):
