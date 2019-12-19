@@ -103,7 +103,8 @@ namespace {
           
           errs() << *new_instr << "\n";
 
-          if (new_instr->getOpcodeName() == "alloca") {
+          std::string op_code = I->getOpcodeName();
+          if (op_code == "alloca") {
             Twine new_name = I->getName() + "_" + Twine(i);
             errs() << "set name " << new_name << "\n";
             new_instr->setName(new_name);
