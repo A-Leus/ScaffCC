@@ -127,9 +127,9 @@ if __name__ == "__main__":
     # also get the desired vector length from the benchmark (based on used qubits and max qubits)
     # HACK, make sure to encode space as '__' for makefile
     vlen = 3
-    args.pass_flag = '{}__{}'.format(args.pass_flag, '--qvlen=' + str(vlen))
+    pass_flag = '{}__{}'.format(args.pass_flag, '--qvlen=' + str(vlen))
     # compile and sim a single program
-    compile_result = compile_and_sim(args.build, args.sim, args.compiler, args.pass_lib, args.pass_flag, v, args.do_sim)
+    compile_result = compile_and_sim(args.build, args.sim, args.compiler, args.pass_lib, pass_flag, v, args.do_sim)
     print(compile_result)
 
   # output results to file
