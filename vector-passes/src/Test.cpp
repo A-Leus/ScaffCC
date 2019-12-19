@@ -81,7 +81,6 @@ namespace {
         //metaTable[alloca_op] = InstMetadata_t(newInsts);
       }
 
-
       // then traverse the uses of the original and copy if the original has already been copied
       // this needs to be a bfs algorithm where can't process (copy and populate) instruction
       // until deps have been copied and populated
@@ -102,6 +101,14 @@ namespace {
           auto new_instr = I->clone();
           new_instr = builder.Insert(new_instr);
           
+          errs() << *new_instr << "\n";
+
+          if (new_instr->getOpcodeName() == "alloca") {
+            Twine new_name = I->getName() + "_" + Twine(i);
+            errs() << "set name " << new_name << "\n";
+            new_instr->setName(new_name);
+          }
+
           // for each operand get the copy stored in the metadata for the orignal instruction
           for (int j = 0; j < new_instr->getNumOperands(); j++) {
             // get metadata for this dependency of the original instruction
@@ -117,7 +124,7 @@ namespace {
             }
             else { // normal value
               errs() << "normal val\n";
-              //new_instr->setOperand(j, I->getOperand(j));
+              new_instr->setOperand(j, I->getOperand(j));
             }
           }
 
@@ -135,8 +142,9 @@ namespace {
           // get all dependencies, if all in the metaTable, then deps met and can be added to the queue
           bool depsMet = true;
           for (int i = 0; i < nextI->getNumOperands(); i++) {
-            auto inst_dep = cast<llvm::Instruction>(nextI->getOperand(i));
-            if (!metaTable.count(inst_dep)) depsMet = false;
+            auto inst_dep = dyn_cast<llvm::Instruction>(nextI->getOperand(i));
+            if (inst_dep)
+              if (!metaTable.count(inst_dep)) depsMet = false;
           }
 
           if (depsMet) {

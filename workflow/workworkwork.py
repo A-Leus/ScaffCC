@@ -59,14 +59,14 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
       runs = algo['runs']
     else:
       runs = 1
-
+    runs = 5
     #confidence = 0.95
     vals = []
 
     print('Running {} sim {} times...'.format(algo['name'], runs))
 
     for run in range(runs):
-      meas_val = util.qc_sim(sim_cmd)
+      meas_val = util.qc_sim(sim_cmd, True)
       #print(meas_val)
       val = util.bits_to_val(meas_val)
       vals.append(val)
@@ -126,11 +126,11 @@ if __name__ == "__main__":
   for k,v in algos.items():
     # also get the desired vector length from the benchmark (based on used qubits and max qubits)
     # HACK, make sure to encode space as '__' for makefile
-    vlen = 3
-    args.pass_flag = '{}__{}'.format(args.pass_flag, '--qvlen=' + str(vlen))
+    vlen = v['vlen']
+    pass_flag = '{}__{}'.format(args.pass_flag, '--qvlen=' + str(vlen))
     # compile and sim a single program
-    compile_result = compile_and_sim(args.build, args.sim, args.compiler, args.pass_lib, args.pass_flag, v, args.do_sim)
-    print(compile_result)
+    compile_result = compile_and_sim(args.build, args.sim, args.compiler, args.pass_lib, pass_flag, v, args.do_sim)
+    #print(compile_result)
 
   # output results to file
   if (args.do_sim):
