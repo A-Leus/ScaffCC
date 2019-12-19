@@ -59,7 +59,7 @@ def compile_and_sim(build_path, sim_path, compiler_path, pass_lib_path, pass_fla
       runs = algo['runs']
     else:
       runs = 1
-    runs = 1
+    runs = 5
     #confidence = 0.95
     vals = []
 
