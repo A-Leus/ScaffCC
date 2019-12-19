@@ -6,6 +6,9 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/CommandLine.h"
 
+
+#include <unordered_map>
+#include <queue>
 #include <stdio.h>
 
 using namespace llvm;
@@ -14,6 +17,17 @@ using namespace llvm;
 static cl::opt<int> REP_COUNT("qvlen", cl::desc("Specify the vector length for quantum pass"), cl::value_desc("vlen"), cl::init(3));
 
 namespace {
+  // store metadata for each original instruction during the pass
+  typedef struct InstMetadata_t {
+    std::vector<llvm::Instruction*> clones;
+    InstMetadata_t(std::vector<llvm::Instruction*> clones) {
+      this->clones = clones;
+    }
+    InstMetadata_t() {
+
+    }
+  } InstMetadata_t;
+
   struct TestPass : public FunctionPass {
     static char ID;
     TestPass() : FunctionPass(ID) {}
@@ -28,68 +42,119 @@ namespace {
       for (auto& B : F) {
         for (auto& I : B) {
           auto* op = &I;
+
           std::string op_code = op->getOpcodeName();
-          if (op_code == "alloca") {
+          if (op_code == "alloca") { // Only one operand
             AllocaInst* alloca_op = (AllocaInst*) op;
             bitAllocs.push_back(alloca_op);
           }
         }
       }
 
+      // initially seed the work queue with the allocs
+      std::queue<llvm::Instruction*> workQueue;
+      // Hash table storing extra meta data for the processed instructions
+      std::unordered_map<llvm::Instruction*, InstMetadata_t> metaTable;
+
+
       // then insert a new allocation/copy of the allocation
-
-
-      // then traverse the uses of the original qbit and copy to the new allocs
-
-
-      bool modified = false;
+      // data structure is [orig_alloc][copy#]
+      //std::unordered_map<Instruction*, std::vector<AllocaInst*>> newAllocs;
       for (AllocaInst* alloca_op : bitAllocs) {
-        IRBuilder<> builder(alloca_op);
-        builder.SetInsertPoint(alloca_op->getParent(), ++builder.GetInsertPoint());
-        std::vector<Value*> newOps;
-        Value* newOp;
-        Type* alloca_type = alloca_op->getAllocatedType();
-        Value* alloca_size = alloca_op->getArraySize();
-        for (int i = 0; i < REP_COUNT - 1; i++) {
-          Twine new_name = alloca_op->getName() + "_" + Twine(i);
-          Value* newAlloca = builder.CreateAlloca(alloca_type, alloca_size, new_name);
-          // Value* newCpy = builder.CreateMemCpy(newAlloca, alloca_op, alloca_size, 2);
-          newOps.push_back(newAlloca);
-        }
+
+        // std::vector<Instruction*> newInsts;
+
+        // IRBuilder<> builder(alloca_op);
+        // builder.SetInsertPoint(alloca_op->getParent(), ++builder.GetInsertPoint());
+        // Type* alloca_type = alloca_op->getAllocatedType();
+        // Value* alloca_size = alloca_op->getArraySize();
+        // for (int i = 1; i < REP_COUNT; i++) {
+        //   // need a name otherwise later quantum passes fail
+        //   Twine new_name = alloca_op->getName() + "_" + Twine(i);
+        //   AllocaInst* new_alloca = builder.CreateAlloca(alloca_type, alloca_size, new_name);
+          
+        //   newInsts.push_back(new_alloca);
+        // }
+
+        // add to work queue and set metadata
+        workQueue.push((llvm::Instruction*)alloca_op);
+        //metaTable[alloca_op] = InstMetadata_t(newInsts);
+      }
+
+
+      // then traverse the uses of the original and copy if the original has already been copied
+      // this needs to be a bfs algorithm where can't process (copy and populate) instruction
+      // until deps have been copied and populated
+
+      // keep going untile work queue is empty
+      while (!workQueue.empty()) {
+        // get instruction to process
+        auto &I = workQueue.front();
+        workQueue.pop();
         
-        std::vector<Instruction*> op_list;
-        // Inefficient queue setup, but whatever
-        op_list.insert(op_list.begin(), (Instruction*)alloca_op);
-        // I can't figure out the recursion here tonight...just too tired.
-        for (int tmp = 0; tmp < 2; tmp++) {
-        // while (next_op->getNumUses() > 0) {
-          std::vector<Value*> nextOps;
-          Instruction* cur_op = op_list[op_list.size() - 1];
-          op_list.pop_back();
-          for (auto iter = cur_op->use_begin(); !iter.atEnd(); iter++) {
-            User* cur_user = *iter;
-            auto next_op = (Instruction*) cur_user;
-            op_list.insert(op_list.begin(), next_op);
-            for (int i = 0; i < REP_COUNT - 1; i++) {
-              auto new_instr = next_op->clone();
-              builder.SetInsertPoint(next_op->getParent(), ++builder.GetInsertPoint());
-              new_instr = builder.Insert(new_instr);
-              nextOps.push_back(new_instr);
-              for (int j = 0; j < cur_user->getNumOperands(); j++)
-                if (cur_user->getOperand(j) == cur_op)
-                  new_instr->setOperand(j, newOps[i]);
+        errs() << *I << "\n";
+
+        // do action on the instruction (copy and propagate copied deps)
+        IRBuilder<> builder(I);
+        builder.SetInsertPoint(I->getParent(), ++builder.GetInsertPoint());
+        std::vector<llvm::Instruction*> newInsts;
+        for (int i = 1; i < REP_COUNT; i++) {
+          auto new_instr = I->clone();
+          new_instr = builder.Insert(new_instr);
+          
+          errs() << *new_instr << "\n";
+
+          if (new_instr->getOpcodeName() == "alloca") {
+            Twine new_name = I->getName() + "_" + Twine(i);
+            errs() << "set name " << new_name << "\n";
+            new_instr->setName(new_name);
+          }
+
+          // for each operand get the copy stored in the metadata for the orignal instruction
+          for (int j = 0; j < new_instr->getNumOperands(); j++) {
+            // get metadata for this dependency of the original instruction
+            llvm::Instruction* def_inst = nullptr;
+            auto orig_operand = dyn_cast<llvm::Instruction>(I->getOperand(j));
+            if (orig_operand != nullptr) { // instruction dep
+              errs() << "operand\n";
+              if (metaTable.count(orig_operand)) {
+                def_inst = metaTable[orig_operand].clones[i - 1];
+              }
+              
+              new_instr->setOperand(j, def_inst);
+            }
+            else { // normal value
+              errs() << "normal val\n";
+              new_instr->setOperand(j, I->getOperand(j));
             }
           }
-          newOps = nextOps;
+
+          newInsts.push_back(new_instr);
         }
-        // for (auto& U : op->uses()) {
-        //   User* user = U.getUser();  // A User is anything with operands.
-        //   user->setOperand(U.getOperandNo(), newOp);
-        // }
-        modified = true;
+
+        metaTable[I] = InstMetadata_t(newInsts);
+
+
+        // check uses of this original instruction and try to put future instructions on the work queue if rdy
+        for (auto iter = I->use_begin(); !iter.atEnd(); iter++) {
+          llvm::User* cur_user = *iter;
+          llvm::Instruction* nextI = (llvm::Instruction*) cur_user;
+
+          // get all dependencies, if all in the metaTable, then deps met and can be added to the queue
+          bool depsMet = true;
+          for (int i = 0; i < nextI->getNumOperands(); i++) {
+            auto inst_dep = dyn_cast<llvm::Instruction>(nextI->getOperand(i));
+            if (inst_dep)
+              if (!metaTable.count(inst_dep)) depsMet = false;
+          }
+
+          if (depsMet) {
+            workQueue.push(nextI);
+          }
+        }
       }
-      
-      return modified;
+
+      return (REP_COUNT > 1);
     }
   };
 }
